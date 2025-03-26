@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
 import { UserModule } from "./user/user.module";
 import { TeamModule } from "./team/team.module";
 import { UserTeamModule } from "./userTeam/userTeam.module";
@@ -11,6 +11,8 @@ import { ServeStaticOptionsService } from "./serveStaticOptions.service";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { GraphQLModule } from "@nestjs/graphql";
 import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
+import { AuthModule } from "./auth/auth.module";
+import { AuthMiddleware } from "./auth/auth.middleware";
 
 @Module({
   controllers: [],
@@ -22,6 +24,7 @@ import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
     HealthModule,
     PrismaModule,
     SecretsManagerModule,
+    AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRootAsync({
       useClass: ServeStaticOptionsService,
@@ -36,6 +39,15 @@ import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
           sortSchema: true,
           playground,
           introspection: playground || introspection,
+          context: ({ req }: { req: any }) => {
+            console.log('GraphQL Request Headers:', req.headers);
+            return { req };
+          },
+          formatError: (error: any) => {
+            console.error('GraphQL Error:', error);
+            return error;
+          },
+          debug: true,
         };
       },
       inject: [ConfigService],
@@ -44,4 +56,10 @@ import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
   ],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes('graphql');
+  }
+}

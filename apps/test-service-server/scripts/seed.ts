@@ -16,10 +16,15 @@ async function seed() {
   console.info("Seeding database...");
 
   const client = new PrismaClient();
-  void client.$disconnect();
-
-  console.info("Seeding database with custom seed...");
-  customSeed();
-
-  console.info("Seeded database successfully");
+  
+  try {
+    console.info("Seeding database with custom seed...");
+    await customSeed();
+    
+    console.info("Seeded database successfully");
+  } catch (error) {
+    console.error("Error seeding database:", error);
+  } finally {
+    await client.$disconnect();
+  }
 }

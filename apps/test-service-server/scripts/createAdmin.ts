@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcrypt";
+import * as dotenv from "dotenv";
 
-export async function customSeed() {
+async function createAdmin() {
+  dotenv.config();
   const client = new PrismaClient();
   const salt = process.env.BCRYPT_SALT ? parseInt(process.env.BCRYPT_SALT) : 10;
 
@@ -13,7 +15,7 @@ export async function customSeed() {
 
     if (!existingUser) {
       // Создаем пользователя admin
-      await client.user.create({
+      const user = await client.user.create({
         data: {
           username: "admin",
           password: await bcrypt.hash("admin", salt),
@@ -21,9 +23,9 @@ export async function customSeed() {
           email: "admin@example.com",
         },
       });
-      console.log("Created admin user");
+      console.log("Created admin user:", user);
     } else {
-      console.log("Admin user already exists");
+      console.log("Admin user already exists:", existingUser);
     }
   } catch (error) {
     console.error("Error creating admin user:", error);
@@ -31,3 +33,5 @@ export async function customSeed() {
     await client.$disconnect();
   }
 }
+
+createAdmin();
